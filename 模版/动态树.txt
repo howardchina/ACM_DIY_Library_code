@@ -1,0 +1,115 @@
+/**************************************************************
+    Problem: 1036
+    User: howardchina12
+    Language: C++
+    Result: Accepted
+    Time:4832 ms
+    Memory:2356 kb
+
+    每行一个操作，“CHANGE u t”或者“QMAX u v”或者“QSUM u v”的形式
+****************************************************************/
+ 
+#include <iostream>
+#include <cstdio>
+using namespace std;
+typedef long long LL;
+ 
+int RD(){
+    int x;
+    scanf("%d",&x);
+    return x;
+}
+ 
+#define inf 1000000000;
+const int N = 30000 + 10;
+ 
+int n, m, top;
+int c[N][2],fa[N],q[N],u[N],v[N];
+int w[N],sum[N],mx[N];
+bool rev[N];
+bool isroot(int x){
+    return c[fa[x]][0] != x && c[fa[x]][1] != x;
+}
+void update(int x){
+    int l = c[x][0], r = c[x][1];
+    sum[x] = sum[l] + sum[r] + w[x];
+    mx[x] = max(w[x], max(mx[l], mx[r]));
+}
+void pushdown(int x){
+    int l = c[x][0], r = c[x][1];
+    if (rev[x]){
+        rev[x]^=1; rev[l]^=1; rev[r]^=1;
+        swap(c[x][0],c[x][1]);
+    }
+}
+void rotate(int x){
+    int y = fa[x], z = fa[y], l, r;
+    l = (c[y][1]==x); r = 1^l;
+    if (!isroot(y)) c[z][c[z][1]==y]=x;
+    fa[c[x][r]]=y; fa[y]=x; fa[x]=z;
+    c[y][l] = c[x][r]; c[x][r] = y;
+    update(y); update(x);
+}
+void splay(int x){
+    q[++top]=x;
+    for(int i=x; !isroot(i); i=fa[i]){
+        q[++top] = fa[i];
+    }
+    while(top) pushdown(q[top--]);
+    while(!isroot(x)){
+        int y = fa[x], z = fa[y];
+        if (!isroot(y)){
+            if ((c[y][0]==x)^(c[z][0]==y)) rotate(x);
+            else rotate(y);
+        }
+        rotate(x);
+    }
+}
+void access(int x){
+    for(int t = 0; x; t = x, x = fa[x]){
+        splay(x), c[x][1] = t, update(x);
+    }
+}
+void makeroot(int x){
+    access(x); splay(x); rev[x]^=1;
+}
+void link(int x,int y){
+    makeroot(x); fa[x] = y;
+}
+void split(int x,int y){
+    makeroot(x); access(y); splay(y);
+}
+int main()
+{
+//    freopen("data.in","r",stdin);
+    n = RD(); mx[0]=-inf;
+    for(int i=1;i<n;i++){
+        u[i] = RD(), v[i] = RD();
+    }
+    for(int i=1;i<=n;i++){
+        w[i] = RD();
+        sum[i] = mx[i] = w[i];
+    }
+    for(int i=1;i<n;i++){
+        link(u[i],v[i]);
+    }
+    m = RD();
+    char ch[10];
+    int u,v;
+    while(m--){
+        scanf("%s",ch);
+        u = RD(), v = RD();
+        if (ch[1]=='H'){
+            splay(u);
+            w[u] = v;
+            update(u);
+        }
+        else if (ch[1]=='M'){
+            split(u,v); printf("%d\n", mx[v]);
+        }
+        else{
+            split(u,v); printf("%d\n", sum[v]);
+        }
+    }
+    return 0;
+}

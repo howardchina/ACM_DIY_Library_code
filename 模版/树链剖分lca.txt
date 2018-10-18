@@ -1,0 +1,149 @@
+#include <cstdio>
+#include <cstring>
+#include <queue>
+using namespace std;
+const int N = 30000 + 10;
+const int inf = 0x7fffffff;
+int n;
+struct Edge{int to,nxt;}e[N<<1];
+int tot=0;int head[N];
+void add(int u,int v){
+    e[++tot].to = v; e[tot].nxt = head[u]; head[u] = tot;
+    e[++tot].to = u; e[tot].nxt = head[v]; head[v] = tot;
+}
+int val[N];
+void init(){
+    scanf("%d",&n);
+    int u, v;
+    for(int i=1;i<n;i++){
+        scanf("%d%d",&u,&v);
+        add(u,v);
+    }
+    for(int i=1;i<=n;i++) scanf("%d", &val[i]);
+}
+int fa[N][15],dep[N],siz[N],vis[N];
+void dfs1(int x){
+    siz[x] = 1; vis[x] = 1;
+    for(int i=1;i<=14;i++){
+        if (dep[x]<(1<<i)) break;
+        fa[x][i] = fa[fa[x][i-1]][i-1];
+    }
+    for(int i=head[x], v; i; i=e[i].nxt){
+        v = e[i].to;
+        if (vis[v]) continue;
+        dep[v] = dep[x] + 1;
+        fa[v][0] = x;
+        dfs1(v);
+        siz[x] += siz[v];
+    }
+}
+int sz=0; int pos[N], belong[N];
+void dfs2(int x,int f){
+    int k = 0;
+    pos[x] = ++sz; belong[x] = f;
+    for(int i=head[x], v; i; i=e[i].nxt){
+        v = e[i].to;
+        if (dep[v] > dep[x] && siz[v] > siz[k]) k = v;
+    }
+    if (k == 0) return;
+    dfs2(k, f);
+    for(int i=head[x], v; i; i=e[i].nxt){
+        v = e[i].to;
+        if (dep[v] > dep[x] && v != k) dfs2(v, v);
+    }
+}
+struct Seg{int l,r,mx,sum;}t[N<<2];
+void build(int k,int x,int y){
+    t[k].l = x; t[k].r = y;
+    if (x == y) return;
+    int mid = (x+y)>>1;
+    build(k<<1,x,mid);
+    build(k<<1|1,mid+1,y);
+}
+void pushup(int k){
+    t[k].mx = max(t[k<<1].mx, t[k<<1|1].mx);
+    t[k].sum = t[k<<1].sum + t[k<<1|1].sum;
+}
+void change(int k,int x,int y){
+    int l = t[k].l, r = t[k].r, mid = (l+r)>>1;
+    if (l == r){ t[k].mx = t[k].sum = y; return ;}
+    if (x <= mid) change(k<<1, x, y);
+    else change(k<<1|1, x, y);
+    pushup(k);
+}
+int lca(int x,int y){
+    if (dep[x]<dep[y]) swap(x,y);
+    int t = dep[x] - dep[y];
+    for(int i=0;i<=14;i++){
+        if (t&(1<<i)) x=fa[x][i];
+    }
+    for(int i=14;i>=0;i--){
+        if (fa[x][i] != fa[y][i]){
+            x = fa[x][i]; y = fa[y][i];
+        }
+    }
+    if (x == y) return x;
+    return fa[x][0];
+}
+int queryMax(int k,int x,int y){
+    int l = t[k].l, r = t[k].r, mid = (l+r)>>1;
+    if (l == x && y == r) return t[k].mx;
+    if (y <= mid) return queryMax(k<<1, x, y);
+    else if (x > mid) return queryMax(k<<1|1, x, y);
+    else return max(queryMax(k<<1, x, mid), queryMax(k<<1|1, mid+1, y));
+}
+int solveMax(int x,int f){
+    int mx = -inf;
+    while(belong[x] != belong[f]){
+        mx = max(mx, queryMax(1, pos[belong[x]], pos[x]));
+        x = fa[belong[x]][0];
+    }
+    mx = max(mx, queryMax(1, pos[f], pos[x]));
+    return mx;
+}
+int querySum(int k,int x,int y){
+    int l = t[k].l, r = t[k].r, mid = (l+r)>>1;
+    if (l == x && y == r) return t[k].sum;
+    if (y <= mid) return querySum(k<<1, x, y);
+    else if (x > mid) return querySum(k<<1|1, x, y);
+    else return querySum(k<<1, x, mid) + querySum(k<<1|1, mid+1, y);
+}
+int solveSum(int x,int f){
+    int sum = 0;
+    while(belong[x] != belong[f]){
+        sum += querySum(1, pos[belong[x]], pos[x]);
+        x = fa[belong[x]][0];
+    }
+    sum += querySum(1, pos[f], pos[x]);
+    return sum;
+}
+void solve(){
+    build(1,1,n);
+    for(int i=1;i<=n;i++) change(1,pos[i],val[i]);
+    int q; scanf("%d",&q);
+    char s[10]; int x, y;
+    while(q--){
+        scanf("%s %d %d",s,&x,&y);
+        if (s[0] == 'C'){
+            val[x] = y;
+            change(1,pos[x], val[x]);
+        }
+        else{
+            int t = lca(x,y);
+            if (s[1] == 'M'){
+                printf("%d\n", max(solveMax(x,t), solveMax(y,t)));
+            }
+            else{
+                printf("%d\n", solveSum(x,t) + solveSum(y,t) - val[t]);
+            }
+        }
+    }
+}
+int main(){
+//    freopen("data.in","r",stdin);
+    init();
+    dfs1(1);
+    dfs2(1,1);
+    solve();
+    return 0;
+}
