@@ -1,0 +1,163 @@
+素数的两种打表法（疯狂打表） 
+#include<stdio.h>
+#include<math.h>
+两种打表比较，第二种内存脚省，但是时间可能比较长一点
+
+#define N 100000
+
+int a[N];
+int s1[100000];
+
+int main()
+{
+int i,j,k,n;
+
+for(i=0;i<=N;i++)//初始化表一
+   a[i]=1;
+
+n=(int)sqrt(N);//注意n！！！
+for(i=2;i<=n;i++)//表一进行打表
+{
+   for(j=i+i;j<=N;j+=i)//素数的倍数不是素数原理
+    a[j]=0;
+}
+    
+k=1;
+for(i=2;i<=N;i++)//将表一的素数存入表二，打表完成
+   if(a[i])
+   {
+    s1[k]=i;
+    k++; 
+   }
+  
+   for(i=1;i<k;i++)
+    printf("%d\t",s1[i]);
+  
+   return 0;
+}
+
+打表法二：
+
+
+/*1.首先素数先排除2和3的倍数*/
+/*2.对6*n-1和6*n+1进行判断是否素数判断过程为3.*/
+/*3.将当前6*n-1和6*n+1对素数表s[]中的前1~sqrt(le)+1 个数进行mod运算，都不能mod尽的为素数，并存表*/
+/*重复2.和 3.的步骤直到循环结束*/
+#include<stdio.h>
+#include<math.h>
+#define N 1000
+
+int s[N];
+
+int main()
+{
+    int i,j,ls,n;
+int a,b,sign1,sign2;
+
+s[1]=2;//步骤1
+s[2]=3;
+ls=2;
+    for(i=6;i<N;i=i+6)//步骤2
+{
+   a=i-1;
+   b=i+1;
+   sign1=1;
+   sign2=1;
+   n=(int)sqrt(ls);
+    for(j=1;j<=n+1;j++)//步骤3.
+   {
+    if(a%s[j]==0)
+    {
+     sign1=0;
+     break;
+    }
+   }
+
+   for(j=1;j<=n+1;j++)
+   {
+    if(b%s[j]==0)
+    {
+     sign2=0;
+     break;
+    }
+   }
+
+   if(sign1)//素数存表
+   {
+    ls+=1;
+    s[ls]=a;
+   }
+   if(sign2)
+   {
+    ls+=1;
+    s[ls]=b;
+   }
+  
+}
+
+    for(i=1;i<=ls;i++)
+   printf(" %d\t",s[i]);
+return 0;
+}
+关于线性素数打表
+[转]线性筛法求质数(素数)表及其原理
+2011-01-31 14:16 by Hailoong, 88 visits, 网摘, 收藏, 编辑
+ 
+参考链接:
+http://leonbule.blogbus.com/logs/5342169.html 
+http://kmplayer.javaeye.com/blog/606352
+
+
+
+
+原理:
+1. 任何一个合数都可以表示成一个质数和一个数的乘积
+2. 假设A是一个合数，且A = x * y，这里x也是一个合数，那么有:
+       A = x * y; (假设y质数，x合数)
+       x = a * b; (假设a是质数，且a < x)
+ ->  A = a * b * y = a * Z (Z = b * y)
+即一个合数(x)与一个质数(y)的乘积可以表示成一个更大的合数(Z)与一个更小的质数(a)的乘积
+这也是理解代码中 if(i%primes[j] == 0)break;的关键
+例如: 如果i = 8; 那么由于i%2 == 0; 因此对于i=8就只需要检查primes[1]即可，因为对于大于primes[1]的质数，像3，有:
+        8*3 = 2*4*3 = 12*2
+也就是说24(8*3=24)并不需要在8时检查，在12时才检查 
+
+ 
+
+代码 
+
+1 #include <iostream> 
+2  using namespace std;
+3 
+4  const int MAX=100;
+5  bool isPrime[MAX+1];
+6  int total;//计数 
+7  int prime[MAX+1];
+8 
+9  //线性筛法寻找素数 
+10  void makePrime()
+11 {
+12 memset(isPrime,true,sizeof(isPrime));
+13 memset(prime,0,sizeof(prime));
+14 for(int i=2;i<=MAX;i++)
+15 {
+16 if(isPrime[i]) prime[total++]=i;
+17 for(int j=0; j<total && i*prime[j]<=MAX; j++)
+18 {
+19 isPrime[i*prime[j]]=false;
+20 //i此时不是素数,只是拓展用 
+21   if(i%prime[j]==0) break;
+22 }
+23 }
+24 }
+25 
+26  int main()
+27 {
+28 makePrime();
+29 for(int i=0;i<total;i++)
+30 {
+31 cout<<prime[i]<<" ";
+32 if((i+1)%10==0) cout<<endl;
+33 }
+34 return 0;
+35 }  
